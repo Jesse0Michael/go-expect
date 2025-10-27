@@ -1,0 +1,6 @@
+bin/
+.coverage/
+vendor/
+.vscode/
+debug
+.DS_Store

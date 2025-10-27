@@ -1,0 +1,27 @@
+name: Build
+on:
+  push:
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          check-latest: true
+
+      - name: Test
+        run: |
+          go mod download
+          mkdir .coverage 
+          go test -v ./pkg/... -cover -coverprofile=.coverage/assured.coverprofile
+
+      - name: Coveralls
+        uses: shogo82148/actions-goveralls@v1
+        with:
+          path-to-profile: .coverage/assured.coverprofile
