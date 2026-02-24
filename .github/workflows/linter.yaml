@@ -10,10 +10,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Lint Code Base
-        uses: docker://github/super-linter:v4.9.6
+        uses: docker://github/super-linter:v8.2.1
         env:
           VALIDATE_ALL_CODEBASE: false
           VALIDATE_GO: true

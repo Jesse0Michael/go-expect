@@ -1,0 +1,45 @@
+connections:
+  - name: http
+    type: http
+    url: http://localhost:8080
+
+scenarios:
+  - name: Test API
+    steps:
+      - request:
+          connection: http
+          method: POST
+          endpoint: /increment
+        expect:
+          status: 200
+          body:
+            count: 1
+      - request:
+          connection: http
+          method: POST
+          endpoint: /increment
+        expect:
+          status: 200
+          body:
+            count: 2
+      - request:
+          connection: http
+          method: POST
+          endpoint: /decrement
+        expect:
+          status: 200
+          body:
+            count: 1
+      - request:
+          connection: http
+          method: POST
+          endpoint: /zero
+        expect:
+          status: 200
+          body:
+            count: 0
+
+  - name: Not Found
+    steps:
+      - type: log
+        message: "Test scenario completed."
