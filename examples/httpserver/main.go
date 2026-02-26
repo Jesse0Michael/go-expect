@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"sync/atomic"
 	"syscall"
 )
@@ -45,6 +46,24 @@ func run() *http.Server {
 	})
 	mux.HandleFunc("POST /zero", func(w http.ResponseWriter, _ *http.Request) {
 		counter.Store(0)
+		writeCounter(w, counter.Load())
+	})
+	mux.HandleFunc("POST /add/{n}", func(w http.ResponseWriter, r *http.Request) {
+		n, err := strconv.ParseInt(r.PathValue("n"), 10, 64)
+		if err != nil {
+			http.Error(w, "invalid n", http.StatusBadRequest)
+			return
+		}
+		counter.Add(n)
+		writeCounter(w, counter.Load())
+	})
+	mux.HandleFunc("POST /sub/{n}", func(w http.ResponseWriter, r *http.Request) {
+		n, err := strconv.ParseInt(r.PathValue("n"), 10, 64)
+		if err != nil {
+			http.Error(w, "invalid n", http.StatusBadRequest)
+			return
+		}
+		counter.Add(-n)
 		writeCounter(w, counter.Load())
 	})
 

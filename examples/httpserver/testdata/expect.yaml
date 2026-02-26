@@ -22,6 +22,25 @@ scenarios:
           status: 200
           body:
             count: 2
+          save:
+            - field: count
+              as: current
+      - request:
+          connection: http
+          method: POST
+          endpoint: /add/{current}
+        expect:
+          status: 200
+          body:
+            count: 4
+      - request:
+          connection: http
+          method: POST
+          endpoint: /sub/{current}
+        expect:
+          status: 200
+          body:
+            count: 2
       - request:
           connection: http
           method: POST
