@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package counter;
+
+option go_package = "github.com/jesse0michael/go-expect/examples/grpcserver/proto";
+
+message Empty {}
+
+message AddRequest {
+  int32 n = 1;
+}
+
+message CounterResponse {
+  int32 count = 1;
+}
+
+service CounterService {
+  rpc Increment(Empty) returns (CounterResponse);
+  rpc Decrement(Empty) returns (CounterResponse);
+  rpc Zero(Empty) returns (CounterResponse);
+  rpc Add(AddRequest) returns (CounterResponse);
+}

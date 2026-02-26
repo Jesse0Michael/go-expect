@@ -1,0 +1,52 @@
+connections:
+  - name: grpc
+    type: grpc
+    url: localhost:50051
+
+scenarios:
+  - name: counter flow
+    steps:
+      - request:
+          connection: grpc
+          endpoint: /counter.CounterService/Increment
+        expect:
+          code: OK
+          body:
+            count: 1
+
+      - request:
+          connection: grpc
+          endpoint: /counter.CounterService/Increment
+        expect:
+          code: OK
+          body:
+            count: 2
+          save:
+            - field: count
+              as: current
+
+      - request:
+          connection: grpc
+          endpoint: /counter.CounterService/Add
+          body:
+            n: "{current}"
+        expect:
+          code: OK
+          body:
+            count: 4
+
+      - request:
+          connection: grpc
+          endpoint: /counter.CounterService/Decrement
+        expect:
+          code: OK
+          body:
+            count: 3
+
+      - request:
+          connection: grpc
+          endpoint: /counter.CounterService/Zero
+        expect:
+          code: OK
+          body:
+            count: 0

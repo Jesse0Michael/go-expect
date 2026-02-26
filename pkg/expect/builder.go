@@ -130,11 +130,12 @@ func (b *StepBuilder) Build() Step {
 
 // GRPCCall creates a step that invokes a typed gRPC unary method.
 // fullMethod is the full gRPC method path, e.g. "/mypackage.MyService/MyMethod".
-func GRPCCall(connection, fullMethod string, msg proto.Message) *StepBuilder {
+// req is the request message; resp is the expected response type used to receive the reply.
+func GRPCCall(connection, fullMethod string, req, resp proto.Message) *StepBuilder {
 	return &StepBuilder{
 		step: Step{
 			Connection: connection,
-			Request:    &GRPCRequest{FullMethod: fullMethod, Message: msg, Header: make(map[string]string)},
+			Request:    &GRPCRequest{FullMethod: fullMethod, Message: req, Response: resp, Header: make(map[string]string)},
 			Expect:     &GRPCExpect{},
 		},
 	}
