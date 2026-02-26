@@ -1,45 +1,42 @@
-package loader
+package expect
 
 import (
 	"encoding/json"
 	"fmt"
 	"maps"
 	"slices"
-
-	"github.com/jesse0michael/go-expect/pkg/expect"
 )
 
 // buildSuite performs a two-pass build over a set of parsed files:
 // first collecting all connections, then building scenarios with full connection context.
-func buildSuite(files []expectFile) (*expect.Suite, error) {
-	var allConns []expect.Connection
+func buildSuite(files []expectFile) (*Suite, error) {
+	var allConns []Connection
 	for _, f := range files {
-		conns, err := buildConnections(f)
+		conns, err := buildFileConnections(f)
 		if err != nil {
 			return nil, err
 		}
 		allConns = append(allConns, conns...)
 	}
-	connMap, defaultConn := connectionMap(allConns)
+	connMap, defaultConn := buildConnMap(allConns)
 
-	var scenarios []*expect.Scenario
+	var scenarios []*Scenario
 	for _, f := range files {
-		ss, err := buildScenarios(f, connMap, defaultConn)
+		ss, err := buildFileScenarios(f, connMap, defaultConn)
 		if err != nil {
 			return nil, err
 		}
 		scenarios = append(scenarios, ss...)
 	}
 
-	return expect.NewSuite().
+	return NewSuite().
 		WithConnections(slices.Collect(maps.Values(connMap))...).
 		WithScenarios(scenarios...), nil
 }
 
-// connectionMap builds a name→Connection map and picks the first entry, or a connection with an empty name, as the default.
-func connectionMap(conns []expect.Connection) (map[string]expect.Connection, expect.Connection) {
-	m := make(map[string]expect.Connection, len(conns))
-	var def expect.Connection
+func buildConnMap(conns []Connection) (map[string]Connection, Connection) {
+	m := make(map[string]Connection, len(conns))
+	var def Connection
 	for _, c := range conns {
 		name := c.GetName()
 		m[name] = c
@@ -50,10 +47,10 @@ func connectionMap(conns []expect.Connection) (map[string]expect.Connection, exp
 	return m, def
 }
 
-func buildConnections(f expectFile) ([]expect.Connection, error) {
-	var conns []expect.Connection
+func buildFileConnections(f expectFile) ([]Connection, error) {
+	var conns []Connection
 	for _, c := range f.Connections {
-		conn, err := buildConnection(c)
+		conn, err := buildFileConnection(c)
 		if err != nil {
 			return nil, err
 		}
@@ -62,15 +59,15 @@ func buildConnections(f expectFile) ([]expect.Connection, error) {
 	return conns, nil
 }
 
-func buildScenarios(f expectFile, connMap map[string]expect.Connection, defaultConn expect.Connection) ([]*expect.Scenario, error) {
-	var scenarios []*expect.Scenario
+func buildFileScenarios(f expectFile, connMap map[string]Connection, defaultConn Connection) ([]*Scenario, error) {
+	var scenarios []*Scenario
 	for _, s := range f.Scenarios {
-		sc := expect.NewScenario(s.Name)
+		sc := NewScenario(s.Name)
 		for _, st := range s.Steps {
 			if st.Request == nil {
 				continue
 			}
-			step, err := buildStep(st, connMap, defaultConn)
+			step, err := buildFileStep(st, connMap, defaultConn)
 			if err != nil {
 				return nil, fmt.Errorf("scenario %q: %w", s.Name, err)
 			}
@@ -81,35 +78,35 @@ func buildScenarios(f expectFile, connMap map[string]expect.Connection, defaultC
 	return scenarios, nil
 }
 
-func buildConnection(c connection) (expect.Connection, error) {
+func buildFileConnection(c fileConnection) (Connection, error) {
 	switch c.Type {
 	case "http", "https", "":
-		return expect.HTTP(c.Name, c.URL), nil
+		return HTTP(c.Name, c.URL), nil
 	case "grpc":
-		return expect.GRPC(c.Name, c.URL), nil
+		return GRPC(c.Name, c.URL), nil
 	default:
 		return nil, fmt.Errorf("go-expect: unknown connection type %q", c.Type)
 	}
 }
 
-func buildStep(s step, connMap map[string]expect.Connection, defaultConn expect.Connection) (*expect.StepBuilder, error) {
+func buildFileStep(s fileStep, connMap map[string]Connection, defaultConn Connection) (*StepBuilder, error) {
 	conn := defaultConn
 	if c, ok := connMap[s.Request.Connection]; ok {
 		conn = c
 	}
 	switch conn.(type) {
-	case *expect.HTTPConnection:
-		return buildHTTPStep(s)
-	case *expect.GRPCConnection:
-		return buildGRPCStep(s)
+	case *HTTPConnection:
+		return buildFileHTTPStep(s)
+	case *GRPCConnection:
+		return buildFileGRPCStep(s)
 	default:
 		return nil, fmt.Errorf("go-expect: unsupported connection type %T", conn)
 	}
 }
 
-func buildHTTPStep(s step) (*expect.StepBuilder, error) {
+func buildFileHTTPStep(s fileStep) (*StepBuilder, error) {
 	r := s.Request
-	b := expect.HTTPStep(r.Method, r.Endpoint).WithConnection(r.Connection)
+	b := HTTPStep(r.Method, r.Endpoint).WithConnection(r.Connection)
 	for k, v := range r.Header {
 		b.WithHeader(k, v)
 	}
@@ -143,7 +140,7 @@ func buildHTTPStep(s step) (*expect.StepBuilder, error) {
 	return b, nil
 }
 
-func buildGRPCStep(s step) (*expect.StepBuilder, error) {
+func buildFileGRPCStep(s fileStep) (*StepBuilder, error) {
 	r := s.Request
 	var body []byte
 	if r.Body != nil {
@@ -153,7 +150,7 @@ func buildGRPCStep(s step) (*expect.StepBuilder, error) {
 			return nil, fmt.Errorf("marshal request body: %w", err)
 		}
 	}
-	b := expect.GRPCRawCall(r.Connection, r.Endpoint, body)
+	b := GRPCRawCall(r.Connection, r.Endpoint, body)
 	for k, v := range r.Header {
 		b.WithHeader(k, v)
 	}

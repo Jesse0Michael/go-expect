@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/jesse0michael/go-expect/pkg/expect"
-	"github.com/jesse0michael/go-expect/pkg/expect/loader"
 )
 
 // TestYAMLSuite loads testdata/expect.yaml and runs it against an in-process server.
@@ -13,7 +12,7 @@ func TestYAMLSuite(t *testing.T) {
 	srv := httptest.NewServer(run().Handler)
 	t.Cleanup(srv.Close)
 
-	suite, err := loader.LoadFile("testdata/expect.yaml")
+	suite, err := expect.LoadFile("testdata/expect.yaml")
 	if err != nil {
 		t.Fatalf("load yaml: %v", err)
 	}

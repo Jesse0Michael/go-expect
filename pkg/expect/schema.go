@@ -1,27 +1,27 @@
-package loader
+package expect
 
 type expectFile struct {
-	Connections []connection `yaml:"connections" json:"connections"`
-	Scenarios   []scenario   `yaml:"scenarios"   json:"scenarios"`
+	Connections []fileConnection `yaml:"connections" json:"connections"`
+	Scenarios   []fileScenario   `yaml:"scenarios"   json:"scenarios"`
 }
 
-type connection struct {
+type fileConnection struct {
 	Name string `yaml:"name" json:"name"`
 	Type string `yaml:"type" json:"type"`
 	URL  string `yaml:"url"  json:"url"`
 }
 
-type scenario struct {
-	Name  string `yaml:"name"  json:"name"`
-	Steps []step `yaml:"steps" json:"steps"`
+type fileScenario struct {
+	Name  string     `yaml:"name"  json:"name"`
+	Steps []fileStep `yaml:"steps" json:"steps"`
 }
 
-type step struct {
-	Request *request     `yaml:"request" json:"request"`
-	Expect  *expectation `yaml:"expect"  json:"expect"`
+type fileStep struct {
+	Request *fileRequest     `yaml:"request" json:"request"`
+	Expect  *fileExpectation `yaml:"expect"  json:"expect"`
 }
 
-type request struct {
+type fileRequest struct {
 	Connection string            `yaml:"connection" json:"connection"`
 	Method     string            `yaml:"method"     json:"method"`
 	Endpoint   string            `yaml:"endpoint"   json:"endpoint"`
@@ -30,15 +30,15 @@ type request struct {
 	Query      map[string]string `yaml:"query"      json:"query"`
 }
 
-type expectation struct {
+type fileExpectation struct {
 	Status int               `yaml:"status" json:"status"`
 	Code   string            `yaml:"code"   json:"code"`
 	Header map[string]string `yaml:"header" json:"header"`
 	Body   any               `yaml:"body"   json:"body"`
-	Save   []saveEntry       `yaml:"save"   json:"save"`
+	Save   []fileSaveEntry   `yaml:"save"   json:"save"`
 }
 
-type saveEntry struct {
+type fileSaveEntry struct {
 	Field string `yaml:"field" json:"field"`
 	As    string `yaml:"as"    json:"as"`
 }

@@ -1,9 +1,7 @@
-package loader
+package expect
 
 import (
 	"testing"
-
-	expect "github.com/jesse0michael/go-expect/pkg/expect"
 )
 
 func TestUnmarshalYAML_connections(t *testing.T) {
@@ -33,7 +31,7 @@ scenarios: []
 		t.Fatalf("LoadYAML error: %v", err)
 	}
 	// Connections from file are in the suite; caller can override by name.
-	suite.WithConnections(expect.HTTP("api", "http://example.com"))
+	suite.WithConnections(HTTP("api", "http://example.com"))
 }
 
 func TestBuildScenarios_steps(t *testing.T) {
@@ -67,14 +65,14 @@ scenarios:
 	if err != nil {
 		t.Fatalf("unmarshalYAML error: %v", err)
 	}
-	conns, err := buildConnections(f)
+	conns, err := buildFileConnections(f)
 	if err != nil {
-		t.Fatalf("buildConnections error: %v", err)
+		t.Fatalf("buildFileConnections error: %v", err)
 	}
-	connMap, defaultConn := connectionMap(conns)
-	scenarios, err := buildScenarios(f, connMap, defaultConn)
+	connMap, defaultConn := buildConnMap(conns)
+	scenarios, err := buildFileScenarios(f, connMap, defaultConn)
 	if err != nil {
-		t.Fatalf("buildScenarios error: %v", err)
+		t.Fatalf("buildFileScenarios error: %v", err)
 	}
 	if len(scenarios) != 1 {
 		t.Fatalf("expected 1 scenario, got %d", len(scenarios))
@@ -105,14 +103,14 @@ scenarios:
 	if err != nil {
 		t.Fatalf("unmarshalYAML error: %v", err)
 	}
-	conns, err := buildConnections(f)
+	conns, err := buildFileConnections(f)
 	if err != nil {
-		t.Fatalf("buildConnections error: %v", err)
+		t.Fatalf("buildFileConnections error: %v", err)
 	}
-	connMap, defaultConn := connectionMap(conns)
-	_, err = buildScenarios(f, connMap, defaultConn)
+	connMap, defaultConn := buildConnMap(conns)
+	_, err = buildFileScenarios(f, connMap, defaultConn)
 	if err != nil {
-		t.Fatalf("buildScenarios error: %v", err)
+		t.Fatalf("buildFileScenarios error: %v", err)
 	}
 }
 
@@ -128,7 +126,7 @@ scenarios: []
 	if err != nil {
 		t.Fatalf("unmarshalYAML error: %v", err)
 	}
-	_, err = buildConnections(f)
+	_, err = buildFileConnections(f)
 	if err == nil {
 		t.Fatal("expected error for unknown connection type, got nil")
 	}

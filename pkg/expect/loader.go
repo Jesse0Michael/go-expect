@@ -1,4 +1,4 @@
-package loader
+package expect
 
 import (
 	"encoding/json"
@@ -8,7 +8,6 @@ import (
 	"path"
 	"path/filepath"
 
-	"github.com/jesse0michael/go-expect/pkg/expect"
 	"gopkg.in/yaml.v3"
 )
 
@@ -29,7 +28,7 @@ func unmarshalJSON(data []byte) (expectFile, error) {
 }
 
 // LoadYAML parses YAML bytes and returns a Suite ready to run.
-func LoadYAML(data []byte) (*expect.Suite, error) {
+func LoadYAML(data []byte) (*Suite, error) {
 	f, err := unmarshalYAML(data)
 	if err != nil {
 		return nil, err
@@ -38,7 +37,7 @@ func LoadYAML(data []byte) (*expect.Suite, error) {
 }
 
 // LoadJSON parses JSON bytes and returns a Suite ready to run.
-func LoadJSON(data []byte) (*expect.Suite, error) {
+func LoadJSON(data []byte) (*Suite, error) {
 	f, err := unmarshalJSON(data)
 	if err != nil {
 		return nil, err
@@ -47,7 +46,7 @@ func LoadJSON(data []byte) (*expect.Suite, error) {
 }
 
 // LoadFile parses a YAML or JSON file from the OS filesystem, detected by extension.
-func LoadFile(fpath string) (*expect.Suite, error) {
+func LoadFile(fpath string) (*Suite, error) {
 	data, err := os.ReadFile(fpath)
 	if err != nil {
 		return nil, fmt.Errorf("go-expect: read file %q: %w", fpath, err)
@@ -59,7 +58,7 @@ func LoadFile(fpath string) (*expect.Suite, error) {
 }
 
 // LoadDir loads all *.yaml, *.yml, and *.json files in dir from the OS filesystem.
-func LoadDir(dir string) (*expect.Suite, error) {
+func LoadDir(dir string) (*Suite, error) {
 	var files []expectFile
 	err := filepath.WalkDir(dir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
@@ -96,7 +95,7 @@ func LoadDir(dir string) (*expect.Suite, error) {
 
 // LoadFS loads all *.yaml, *.yml, and *.json files from fsys and returns a Suite ready to run.
 // Useful with //go:embed directories. Use fs.Sub to scope to a subdirectory if needed.
-func LoadFS(fsys fs.FS) (*expect.Suite, error) {
+func LoadFS(fsys fs.FS) (*Suite, error) {
 	var files []expectFile
 	err := fs.WalkDir(fsys, ".", func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
