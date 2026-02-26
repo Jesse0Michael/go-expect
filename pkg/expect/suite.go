@@ -40,7 +40,7 @@ func (s *Suite) WithLogger(log *slog.Logger) *Suite {
 func (s *Suite) WithConnections(conns ...Connection) *Suite {
 	for _, c := range conns {
 		s.connections[c.GetName()] = c
-		if s.defaultConn == nil {
+		if s.defaultConn == nil || c.GetName() == "" {
 			s.defaultConn = c
 		}
 	}

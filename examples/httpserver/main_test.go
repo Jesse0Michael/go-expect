@@ -1,11 +1,31 @@
 package main
 
 import (
+	_ "embed"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/jesse0michael/go-expect/pkg/expect"
 )
+
+//go:embed testdata/example.yaml
+var exampleYAML []byte
+
+// TestEmbeddedYAMLSuite loads an embedded YAML file and runs it against an in-process server.
+func TestEmbeddedYAMLSuite(t *testing.T) {
+	srv := httptest.NewServer(run().Handler)
+	t.Cleanup(srv.Close)
+
+	suite, err := expect.LoadYAML(exampleYAML)
+	if err != nil {
+		t.Fatalf("load yaml: %v", err)
+	}
+
+	// Override the connection URL to point at the in-process test server.
+	suite.WithConnections(expect.HTTP("", srv.URL))
+
+	expect.NewTestSuite(suite).Run(t)
+}
 
 // TestYAMLSuite loads testdata/expect.yaml and runs it against an in-process server.
 func TestYAMLSuite(t *testing.T) {

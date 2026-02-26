@@ -38,8 +38,3 @@ scenarios:
           status: 200
           body:
             count: 0
-
-  - name: Not Found
-    steps:
-      - type: log
-        message: "Test scenario completed."
