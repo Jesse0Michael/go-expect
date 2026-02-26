@@ -6,6 +6,8 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+
+	"github.com/tidwall/gjson"
 )
 
 // ExpectBody holds the expected response body and validates it against actual bytes.
@@ -90,9 +92,19 @@ func partialMatch(actual, expected any) error {
 }
 
 // SaveEntry defines a field to extract from the response body into a variable.
+// Field uses json path notation (e.g. "id", "user.name", "items.0.id").
 type SaveEntry struct {
 	Field string
 	As    string
+}
+
+// saveFromJSON extracts fields from JSON bytes into vars using gjson paths.
+func saveFromJSON(data []byte, entries []SaveEntry, vars VarStore) {
+	for _, entry := range entries {
+		if result := gjson.GetBytes(data, entry.Field); result.Exists() {
+			vars[entry.As] = result.Value()
+		}
+	}
 }
 
 // HTTPExpect defines the expected HTTP response and optional variable extractions.
@@ -136,13 +148,7 @@ func (e *HTTPExpect) Validate(resp *http.Response, vars VarStore) error {
 	}
 
 	if len(e.Save) > 0 && vars != nil {
-		if parsed, ok := ExpectBody(bodyBytes).structured(); ok {
-			for _, entry := range e.Save {
-				if val, ok := parsed[entry.Field]; ok {
-					vars[entry.As] = val
-				}
-			}
-		}
+		saveFromJSON(bodyBytes, e.Save, vars)
 	}
 
 	return nil

@@ -100,13 +100,7 @@ func (e *GRPCExpect) Validate(respBytes []byte, grpcErr error, vars VarStore) er
 	}
 
 	if len(e.Save) > 0 && vars != nil && respBytes != nil {
-		if parsed, ok := ExpectBody(respBytes).structured(); ok {
-			for _, entry := range e.Save {
-				if val, ok := parsed[entry.Field]; ok {
-					vars[entry.As] = val
-				}
-			}
-		}
+		saveFromJSON(respBytes, e.Save, vars)
 	}
 
 	return nil
