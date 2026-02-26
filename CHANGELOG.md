@@ -1,3 +1,9 @@
+## [1.0.1](https://github.com/Jesse0Michael/go-expect/compare/v1.0.0...v1.0.1) (2026-02-26)
+
+### Bug Fixes
+
+- grpc tests ([77218e1](https://github.com/Jesse0Michael/go-expect/commit/77218e14d594fde86e6b69d0e35bc42bcea704d9))
+
 # 1.0.0 (2026-02-26)
 
 ### Bug Fixes
