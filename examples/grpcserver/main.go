@@ -2,25 +2,16 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net"
 	"os"
 	"sync/atomic"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/encoding"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
+	"google.golang.org/grpc/reflection"
 
 	pb "github.com/jesse0michael/go-expect/examples/grpcserver/proto"
 )
-
-func init() {
-	// Register a JSON codec so the server accepts JSON-encoded messages,
-	// enabling GRPCRawCall from go-expect (and YAML-driven tests).
-	encoding.RegisterCodec(jsonCodec{})
-}
 
 func main() {
 	lis, err := net.Listen("tcp", ":"+port())
@@ -37,6 +28,7 @@ func main() {
 func run() *grpc.Server {
 	s := grpc.NewServer()
 	pb.RegisterCounterServiceServer(s, &counterServer{})
+	reflection.Register(s)
 	return s
 }
 
@@ -67,26 +59,4 @@ func port() string {
 		return p
 	}
 	return "50051"
-}
-
-// jsonCodec lets the server accept JSON-encoded gRPC messages using protojson.
-type jsonCodec struct{}
-
-func (jsonCodec) Name() string { return "json" }
-
-func (jsonCodec) Marshal(v any) ([]byte, error) {
-	if m, ok := v.(proto.Message); ok {
-		return protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(m)
-	}
-	return json.Marshal(v)
-}
-
-func (jsonCodec) Unmarshal(data []byte, v any) error {
-	if len(data) == 0 {
-		data = []byte("{}")
-	}
-	if m, ok := v.(proto.Message); ok {
-		return protojson.Unmarshal(data, m)
-	}
-	return json.Unmarshal(data, v)
 }

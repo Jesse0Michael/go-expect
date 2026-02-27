@@ -2,16 +2,16 @@ package expect
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-// GRPCRequest invokes a unary gRPC method using JSON over gRPC.
-// Body is the JSON-encoded request body; an empty body sends {}.
+// GRPCRequest invokes a unary gRPC method using server reflection to resolve
+// proto descriptors. Body is the JSON-encoded request; an empty body sends {}.
 type GRPCRequest struct {
 	// FullMethod is the full gRPC method path, e.g. "/mypackage.MyService/MyMethod".
 	FullMethod string
@@ -39,20 +39,31 @@ func (r *GRPCRequest) Run(conn *GRPCConnection, vars VarStore) ([]byte, error) {
 		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
+	methodDesc, err := conn.resolveMethod(ctx, fullMethod)
+	if err != nil {
+		return nil, fmt.Errorf("resolve method: %w", err)
+	}
+
 	body := vars.InterpolateBytes(r.Body)
 	if len(body) == 0 {
 		body = []byte("{}")
 	}
-	var respRaw json.RawMessage
-	err = cc.Invoke(ctx, fullMethod,
-		(*jsonMessage)(&body),
-		(*jsonMessage)((*[]byte)(&respRaw)),
-		grpc.ForceCodec(jsonCodec{}),
-	)
-	if err != nil {
+
+	reqMsg := dynamicpb.NewMessage(methodDesc.Input())
+	if err := (protojson.UnmarshalOptions{DiscardUnknown: true}).Unmarshal(body, reqMsg); err != nil {
+		return nil, fmt.Errorf("unmarshal request body: %w", err)
+	}
+
+	respMsg := dynamicpb.NewMessage(methodDesc.Output())
+	if err := cc.Invoke(ctx, fullMethod, reqMsg, respMsg); err != nil {
 		return nil, err
 	}
-	return respRaw, nil
+
+	respBytes, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(respMsg)
+	if err != nil {
+		return nil, fmt.Errorf("marshal response: %w", err)
+	}
+	return respBytes, nil
 }
 
 // GRPCExpect validates a gRPC response.
@@ -88,31 +99,4 @@ func (e *GRPCExpect) Validate(respBytes []byte, grpcErr error, vars VarStore) er
 	}
 
 	return nil
-}
-
-// jsonMessage is a grpc codec adapter for raw JSON bytes.
-type jsonMessage []byte
-
-func (j *jsonMessage) ProtoMessage()            {}
-func (j *jsonMessage) Reset()                   { *j = nil }
-func (j *jsonMessage) String() string           { return string(*j) }
-func (j *jsonMessage) Marshal() ([]byte, error) { return *j, nil }
-func (j *jsonMessage) Unmarshal(b []byte) error { *j = b; return nil }
-
-// jsonCodec is a gRPC codec that passes JSON bytes through as-is.
-type jsonCodec struct{}
-
-func (jsonCodec) Name() string { return "json" }
-func (jsonCodec) Marshal(v any) ([]byte, error) {
-	if m, ok := v.(*jsonMessage); ok {
-		return []byte(*m), nil
-	}
-	return json.Marshal(v)
-}
-func (jsonCodec) Unmarshal(data []byte, v any) error {
-	if m, ok := v.(*jsonMessage); ok {
-		*m = data
-		return nil
-	}
-	return json.Unmarshal(data, v)
 }
