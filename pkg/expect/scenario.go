@@ -43,7 +43,7 @@ func (s *Scenario) After(fn AfterFunc) *Scenario {
 	return s
 }
 
-// Run executes all steps sequentially, then runs all after-funcs.
+// Run executes steps sequentially, stopping on the first failure.
 // after-funcs always execute regardless of before or step failures.
 func (s *Scenario) Run(log *slog.Logger, defaultConn Connection, connections map[string]Connection, vars VarStore) error {
 	log = log.With("scenario", s.Name)
@@ -72,8 +72,7 @@ func (s *Scenario) Run(log *slog.Logger, defaultConn Connection, connections map
 			if err := step.Run(conn, vars); err != nil {
 				log.Error("step failed", "step", label, "error", err)
 				errs = append(errs, fmt.Errorf("step %s: %w", label, err))
-			} else {
-				log.Info("step passed", "step", label)
+				break
 			}
 		}
 	}

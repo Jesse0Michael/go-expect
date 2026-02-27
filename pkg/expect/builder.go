@@ -3,6 +3,7 @@ package expect
 import (
 	"encoding/json"
 
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -128,21 +129,18 @@ func (b *StepBuilder) Build() Step {
 	return b.step
 }
 
-// GRPCCall creates a step that invokes a typed gRPC unary method.
+// GRPCCall creates a step that invokes a gRPC method using a proto message as the request.
+// The message is marshaled to JSON via protojson before sending.
 // fullMethod is the full gRPC method path, e.g. "/mypackage.MyService/MyMethod".
-// req is the request message; resp is the expected response type used to receive the reply.
-func GRPCCall(connection, fullMethod string, req, resp proto.Message) *StepBuilder {
-	return &StepBuilder{
-		step: Step{
-			Connection: connection,
-			Request:    &GRPCRequest{FullMethod: fullMethod, Message: req, Response: resp, Header: make(map[string]string)},
-			Expect:     &GRPCExpect{},
-		},
+func GRPCCall(connection, fullMethod string, req proto.Message) *StepBuilder {
+	body, err := protojson.Marshal(req)
+	if err != nil {
+		panic("go-expect: GRPCCall marshal error: " + err.Error())
 	}
+	return GRPCRawCall(connection, fullMethod, body)
 }
 
-// GRPCRawCall creates a step that invokes a gRPC method using raw JSON bodies.
-// Use this when you don't have compiled proto stubs.
+// GRPCRawCall creates a step that invokes a gRPC method using raw JSON bytes as the request body.
 func GRPCRawCall(connection, fullMethod string, body []byte) *StepBuilder {
 	return &StepBuilder{
 		step: Step{

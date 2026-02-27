@@ -8,28 +8,20 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
-	"google.golang.org/protobuf/proto"
 )
 
-// GRPCRequest invokes a unary gRPC method. Set Message/Response for typed proto invocation
-// (from Go code with compiled stubs), or Body for raw JSON invocation (from YAML or
-// dynamic tests without compiled stubs). Message takes precedence when both are set.
+// GRPCRequest invokes a unary gRPC method using JSON over gRPC.
+// Body is the JSON-encoded request body; an empty body sends {}.
 type GRPCRequest struct {
 	// FullMethod is the full gRPC method path, e.g. "/mypackage.MyService/MyMethod".
 	FullMethod string
-	// Message is the request proto message (typed invocation).
-	Message proto.Message
-	// Response is the expected response proto message type (typed invocation).
-	// A new zero-value instance is created from this to receive the response.
-	Response proto.Message
-	// Body is the JSON-encoded request body (raw invocation).
+	// Body is the JSON-encoded request body.
 	Body []byte
 	// Header is outgoing metadata to attach to the call.
 	Header map[string]string
 }
 
-// Run invokes the gRPC method and returns the raw response bytes (JSON-encoded).
+// Run invokes the gRPC method and returns the raw JSON response bytes.
 func (r *GRPCRequest) Run(conn *GRPCConnection, vars VarStore) ([]byte, error) {
 	cc, err := conn.ClientConn()
 	if err != nil {
@@ -47,20 +39,6 @@ func (r *GRPCRequest) Run(conn *GRPCConnection, vars VarStore) ([]byte, error) {
 		ctx = metadata.NewOutgoingContext(ctx, md)
 	}
 
-	if r.Message != nil {
-		// Typed invocation: use protojson for marshal/unmarshal.
-		respMsg := r.Response.ProtoReflect().New().Interface()
-		if err := cc.Invoke(ctx, fullMethod, r.Message, respMsg); err != nil {
-			return nil, fmt.Errorf("grpc invoke %q: %w", fullMethod, grpcStatusError(err))
-		}
-		respBytes, err := protojson.MarshalOptions{EmitUnpopulated: true}.Marshal(respMsg)
-		if err != nil {
-			return nil, fmt.Errorf("marshal grpc response: %w", err)
-		}
-		return respBytes, nil
-	}
-
-	// Raw JSON invocation: pass bytes through as-is via codec override.
 	body := vars.InterpolateBytes(r.Body)
 	if len(body) == 0 {
 		body = []byte("{}")
