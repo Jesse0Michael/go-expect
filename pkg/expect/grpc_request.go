@@ -50,7 +50,7 @@ func (r *GRPCRequest) Run(conn *GRPCConnection, vars VarStore) ([]byte, error) {
 		grpc.ForceCodec(jsonCodec{}),
 	)
 	if err != nil {
-		return nil, fmt.Errorf("grpc invoke %q: %w", fullMethod, grpcStatusError(err))
+		return nil, err
 	}
 	return respRaw, nil
 }
@@ -88,13 +88,6 @@ func (e *GRPCExpect) Validate(respBytes []byte, grpcErr error, vars VarStore) er
 	}
 
 	return nil
-}
-
-func grpcStatusError(err error) error {
-	if st, ok := status.FromError(err); ok {
-		return fmt.Errorf("%s: %s", st.Code(), st.Message())
-	}
-	return err
 }
 
 // jsonMessage is a grpc codec adapter for raw JSON bytes.
