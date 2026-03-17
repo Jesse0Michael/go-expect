@@ -100,6 +100,12 @@ func stepLabel(i int, s Step) string {
 		return fmt.Sprintf("[%d] %s %s", i+1, req.Method, req.Path)
 	case *GRPCRequest:
 		return fmt.Sprintf("[%d] grpc %s", i+1, req.FullMethod)
+	case *SQLRequest:
+		stmt := req.Statement
+		if len(stmt) > 40 {
+			stmt = stmt[:40] + "..."
+		}
+		return fmt.Sprintf("[%d] sql %s", i+1, stmt)
 	default:
 		return fmt.Sprintf("[%d]", i+1)
 	}

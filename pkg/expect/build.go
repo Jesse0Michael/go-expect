@@ -84,6 +84,8 @@ func buildFileConnection(c fileConnection) (Connection, error) {
 		return HTTP(c.Name, c.URL), nil
 	case "grpc":
 		return GRPC(c.Name, c.URL), nil
+	case "postgres", "mysql", "sqlite", "sqlite3", "sqlserver":
+		return SQL(c.Name, c.Type, c.URL), nil
 	default:
 		return nil, fmt.Errorf("go-expect: unknown connection type %q", c.Type)
 	}
@@ -99,6 +101,8 @@ func buildFileStep(s fileStep, connMap map[string]Connection, defaultConn Connec
 		return buildFileHTTPStep(s)
 	case *GRPCConnection:
 		return buildFileGRPCStep(s)
+	case *SQLConnection:
+		return buildFileSQLStep(s)
 	default:
 		return nil, fmt.Errorf("go-expect: unsupported connection type %T", conn)
 	}
@@ -135,6 +139,31 @@ func buildFileHTTPStep(s fileStep) (*StepBuilder, error) {
 		}
 		for _, sv := range e.Save {
 			b.Save(sv.Field, sv.As)
+		}
+	}
+	return b, nil
+}
+
+func buildFileSQLStep(s fileStep) (*StepBuilder, error) {
+	r := s.Request
+	b := SQLStep(r.Connection, r.Statement, r.Params...).WithSQLExec(r.Exec)
+	if s.Expect != nil {
+		e := s.Expect
+		if e.RowCount != nil {
+			b.ExpectRowCount(*e.RowCount)
+		}
+		if e.RowsAffected != nil {
+			b.ExpectRowsAffected(int64(*e.RowsAffected))
+		}
+		for _, row := range e.Rows {
+			body, err := json.Marshal(row)
+			if err != nil {
+				return nil, fmt.Errorf("marshal expect row: %w", err)
+			}
+			b.ExpectRow(body)
+		}
+		for _, sv := range e.Save {
+			b.SaveSQL(sv.Field, sv.As)
 		}
 	}
 	return b, nil

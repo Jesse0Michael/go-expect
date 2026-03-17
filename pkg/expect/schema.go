@@ -28,6 +28,11 @@ type fileRequest struct {
 	Body       any               `yaml:"body"       json:"body"`
 	Header     map[string]string `yaml:"header"     json:"header"`
 	Query      map[string]string `yaml:"query"      json:"query"`
+
+	// SQL-specific fields
+	Statement string `yaml:"statement" json:"statement"`
+	Params    []any  `yaml:"params"    json:"params"`
+	Exec      bool   `yaml:"exec"      json:"exec"`
 }
 
 type fileExpectation struct {
@@ -36,6 +41,11 @@ type fileExpectation struct {
 	Header map[string]string `yaml:"header" json:"header"`
 	Body   any               `yaml:"body"   json:"body"`
 	Save   []fileSaveEntry   `yaml:"save"   json:"save"`
+
+	// SQL-specific fields
+	RowCount     *int  `yaml:"row_count"     json:"row_count"`
+	RowsAffected *int  `yaml:"rows_affected" json:"rows_affected"`
+	Rows         []any `yaml:"rows"          json:"rows"`
 }
 
 type fileSaveEntry struct {

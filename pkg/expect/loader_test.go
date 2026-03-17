@@ -114,6 +114,44 @@ scenarios:
 	}
 }
 
+func TestBuildConnections_sqlTypes(t *testing.T) {
+	data := []byte(`
+connections:
+  - name: mydb
+    type: postgres
+    url: postgres://localhost/testdb
+  - name: mydb2
+    type: mysql
+    url: root@tcp(localhost)/testdb
+scenarios: []
+`)
+	f, err := unmarshalYAML(data)
+	if err != nil {
+		t.Fatalf("unmarshalYAML error: %v", err)
+	}
+	conns, err := buildFileConnections(f)
+	if err != nil {
+		t.Fatalf("buildFileConnections error: %v", err)
+	}
+	if len(conns) != 2 {
+		t.Fatalf("expected 2 connections, got %d", len(conns))
+	}
+	pg, ok := conns[0].(*SQLConnection)
+	if !ok {
+		t.Fatalf("expected SQLConnection, got %T", conns[0])
+	}
+	if pg.Driver != "postgres" {
+		t.Fatalf("expected driver postgres, got %s", pg.Driver)
+	}
+	my, ok := conns[1].(*SQLConnection)
+	if !ok {
+		t.Fatalf("expected SQLConnection, got %T", conns[1])
+	}
+	if my.Driver != "mysql" {
+		t.Fatalf("expected driver mysql, got %s", my.Driver)
+	}
+}
+
 func TestBuildConnections_unknownType(t *testing.T) {
 	data := []byte(`
 connections:

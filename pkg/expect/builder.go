@@ -180,6 +180,66 @@ func (b *StepBuilder) SaveGRPC(field, as string) *StepBuilder {
 	return b
 }
 
+// SQLStep creates a StepBuilder for a SQL request.
+func SQLStep(connection, statement string, params ...any) *StepBuilder {
+	return &StepBuilder{
+		step: Step{
+			Connection: connection,
+			Request:    &SQLRequest{Statement: statement, Params: params},
+			Expect:     &SQLExpect{},
+		},
+	}
+}
+
+// WithSQLExec marks the SQL step as an exec (INSERT/UPDATE/DELETE) rather than a query.
+func (b *StepBuilder) WithSQLExec(exec bool) *StepBuilder {
+	b.sqlReq().Exec = exec
+	return b
+}
+
+// ExpectRowCount asserts the exact number of rows returned.
+func (b *StepBuilder) ExpectRowCount(n int) *StepBuilder {
+	b.sqlExpect().RowCount = &n
+	return b
+}
+
+// ExpectRowsAffected asserts the exact number of rows affected.
+func (b *StepBuilder) ExpectRowsAffected(n int64) *StepBuilder {
+	b.sqlExpect().RowsAffected = &n
+	return b
+}
+
+// ExpectRow adds an expected row for partial JSON matching.
+func (b *StepBuilder) ExpectRow(v any) *StepBuilder {
+	switch val := v.(type) {
+	case []byte:
+		b.sqlExpect().Rows = append(b.sqlExpect().Rows, ExpectBody(val))
+	case string:
+		b.sqlExpect().Rows = append(b.sqlExpect().Rows, ExpectBody(val))
+	default:
+		data, err := json.Marshal(v)
+		if err != nil {
+			panic("go-expect: ExpectRow marshal error: " + err.Error())
+		}
+		b.sqlExpect().Rows = append(b.sqlExpect().Rows, ExpectBody(data))
+	}
+	return b
+}
+
+// SaveSQL extracts a field from the first SQL result row into a variable for later steps.
+func (b *StepBuilder) SaveSQL(field, as string) *StepBuilder {
+	b.sqlExpect().Save = append(b.sqlExpect().Save, SaveEntry{Field: field, As: as})
+	return b
+}
+
+func (b *StepBuilder) sqlReq() *SQLRequest {
+	return b.step.Request.(*SQLRequest)
+}
+
+func (b *StepBuilder) sqlExpect() *SQLExpect {
+	return b.step.Expect.(*SQLExpect)
+}
+
 func (b *StepBuilder) httpReq() *HTTPRequest {
 	return b.step.Request.(*HTTPRequest)
 }

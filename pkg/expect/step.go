@@ -37,6 +37,17 @@ func (s *Step) Run(conn Connection, vars VarStore) error {
 		respBytes, grpcErr := req.Run(grpcConn, vars)
 		return s.validateGRPC(respBytes, grpcErr, vars)
 
+	case *SQLRequest:
+		sqlConn, ok := conn.(*SQLConnection)
+		if !ok {
+			return fmt.Errorf("mismatched connection type for SQL request: %T", conn)
+		}
+		result, err := req.Run(sqlConn, vars)
+		if err != nil {
+			return err
+		}
+		return s.validateSQL(result, vars)
+
 	default:
 		return fmt.Errorf("unsupported request type: %T", s.Request)
 	}
@@ -53,6 +64,20 @@ func (s *Step) validateHTTP(resp *http.Response, vars VarStore) error {
 		return exp.Validate(resp, vars)
 	default:
 		return fmt.Errorf("mismatched expect type for HTTP request: %T", s.Expect)
+	}
+}
+
+func (s *Step) validateSQL(result *SQLResult, vars VarStore) error {
+	if s.Expect == nil {
+		return nil
+	}
+	switch exp := s.Expect.(type) {
+	case *SQLExpect:
+		return exp.Validate(result, vars)
+	case SQLExpect:
+		return exp.Validate(result, vars)
+	default:
+		return fmt.Errorf("mismatched expect type for SQL request: %T", s.Expect)
 	}
 }
 
