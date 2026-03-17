@@ -1,3 +1,9 @@
+# [1.1.0](https://github.com/Jesse0Michael/go-expect/compare/v1.0.4...v1.1.0) (2026-03-17)
+
+### Features
+
+- add sql support ([aacfd10](https://github.com/Jesse0Michael/go-expect/commit/aacfd1077630784e1d959863f685854f0edbdb16))
+
 ## [1.0.4](https://github.com/Jesse0Michael/go-expect/compare/v1.0.3...v1.0.4) (2026-02-27)
 
 ### Bug Fixes
